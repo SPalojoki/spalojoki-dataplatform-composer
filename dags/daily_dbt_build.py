@@ -24,34 +24,18 @@ DBT_PROJECT_GITHUB_URL = Variable.get("DBT_PROJECT_GITHUB_URL")
 DBT_PROJECT_DIR = Variable.get("DBT_PROJECT_DIR")
 GCP_PROJECT_ID = Variable.get("GCP_PROJECT_ID")
 
-
-# Task to clone the DBT project from GitHub
-clone_or_pull_dbt_project = BashOperator(
-    task_id="clone_or_pull_dbt_project",
+# Task to run dbt build
+dbt_build = BashOperator(
+    task_id="dbt_build",
     bash_command=f"""
         if [ -d "{DBT_PROJECT_DIR}/.git" ]; then
             cd {DBT_PROJECT_DIR} && git pull
         else
             git clone {DBT_PROJECT_GITHUB_URL} {DBT_PROJECT_DIR}
+            cd {DBT_PROJECT_DIR}
         fi
+        dbt build --profiles-dir ./prod_profile
     """,
-    dag=dag,
-)
-
-# Debugging task to list the directory contents
-list_dbt_project_dir = BashOperator(
-    task_id="list_dbt_project_dir",
-    bash_command=f"ls -la {DBT_PROJECT_DIR}",
-    dag=dag,
-)
-
-# Task to run dbt build
-dbt_build = BashOperator(
-    task_id="dbt_build",
-    bash_command=f"cd {DBT_PROJECT_DIR} && dbt build --profiles-dir ./prod_profile",
     dag=dag,
     env={"GCP_PROJECT_ID": GCP_PROJECT_ID},
 )
-
-
-clone_or_pull_dbt_project >> list_dbt_project_dir >> dbt_build
