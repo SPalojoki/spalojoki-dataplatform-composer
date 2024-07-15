@@ -26,6 +26,7 @@ dag = DAG(
 DBT_PROJECT_GITHUB_URL = Variable.get("DBT_PROJECT_GITHUB_URL")
 DBT_PROJECT_DIR = Variable.get("DBT_PROJECT_DIR")
 GCP_PROJECT_ID = Variable.get("GCP_PROJECT_ID")
+GCP_TOKEN = Variable.get("GCP_TOKEN")
 
 AIRFLOW_HOME = os.environ['AIRFLOW_HOME']
 
@@ -43,5 +44,5 @@ dbt_build = BashOperator(
         dbt build --profiles-dir ./prod_profile
     """,
     dag=dag,
-    env={"GCP_PROJECT_ID": GCP_PROJECT_ID},
+    env={"GCP_PROJECT_ID": GCP_PROJECT_ID, "GCP_TOKEN": GCP_TOKEN},
 )
