@@ -38,6 +38,13 @@ clone_or_pull_dbt_project = BashOperator(
     dag=dag,
 )
 
+# Debugging task to list the directory contents
+list_dbt_project_dir = BashOperator(
+    task_id="list_dbt_project_dir",
+    bash_command=f"ls -la {DBT_PROJECT_DIR}",
+    dag=dag,
+)
+
 # Task to run dbt build
 dbt_build = BashOperator(
     task_id="dbt_build",
@@ -45,3 +52,6 @@ dbt_build = BashOperator(
     dag=dag,
     env={"GCP_PROJECT_ID": GCP_PROJECT_ID},
 )
+
+
+clone_or_pull_dbt_project >> list_dbt_project_dir >> dbt_build
