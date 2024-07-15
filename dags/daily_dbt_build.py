@@ -1,7 +1,10 @@
+import os
+
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
 from airflow.models import Variable
+
 
 default_args = {
     "owner": "airflow",
@@ -24,6 +27,8 @@ DBT_PROJECT_GITHUB_URL = Variable.get("DBT_PROJECT_GITHUB_URL")
 DBT_PROJECT_DIR = Variable.get("DBT_PROJECT_DIR")
 GCP_PROJECT_ID = Variable.get("GCP_PROJECT_ID")
 
+AIRFLOW_HOME = os.environ['AIRFLOW_HOME']
+
 # Task to run dbt build
 dbt_build = BashOperator(
     task_id="dbt_build",
@@ -34,6 +39,7 @@ dbt_build = BashOperator(
             git clone {DBT_PROJECT_GITHUB_URL} {DBT_PROJECT_DIR}
             cd {DBT_PROJECT_DIR}
         fi
+        source {AIRFLOW_HOME}/dbt_env/bin/activate
         dbt build --profiles-dir ./prod_profile
     """,
     dag=dag,
