@@ -1,5 +1,6 @@
 FROM apache/airflow
 COPY requirements.txt .
+COPY dbt-requirements.txt .
 RUN pip install --upgrade pip && \
 pip install -r requirements.txt
 RUN python -m venv dbt_env && source dbt_env/bin/activate && \
