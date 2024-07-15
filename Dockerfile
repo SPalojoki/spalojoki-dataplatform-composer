@@ -1,4 +1,5 @@
 FROM apache/airflow
+RUN apt update && apt install git -y
 RUN pip install --upgrade pip
 COPY requirements.txt .
 COPY ./dags/ /opt/airflow/dags/
