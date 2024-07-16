@@ -8,8 +8,12 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from airflow.models import Variable
-from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateEmptyTableOperator
+from airflow.providers.google.cloud.operators.bigquery import (
+    BigQueryCreateEmptyTableOperator,
+)
 from google.cloud import bigquery
+from airflow.hooks.base_hook import BaseHook
+from google.oauth2 import service_account
 
 default_args = {
     "owner": "airflow",
@@ -32,11 +36,10 @@ DBT_PROJECT_GITHUB_URL = Variable.get("DBT_PROJECT_GITHUB_URL")
 DBT_PROJECT_DIR = Variable.get("DBT_PROJECT_DIR")
 GCP_PROJECT_ID = Variable.get("GCP_PROJECT_ID")
 SAK_PATH = Variable.get("SAK_PATH")
-AIRFLOW_HOME = os.environ['AIRFLOW_HOME']
+AIRFLOW_HOME = os.environ["AIRFLOW_HOME"]
 
 landing_dataset_name = "analytics__landing"
 landing_table_name = "electricity_prices"
-
 
 
 def extract_and_load():
@@ -52,7 +55,9 @@ def extract_and_load():
                 "start_date": row["startDate"],
                 "end_date": row["endDate"],
                 "price": row["price"],
-                "sdp_metadata": json.dumps({"loaded_at": datetime.now(timezone.utc).isoformat()})
+                "sdp_metadata": json.dumps(
+                    {"loaded_at": datetime.now(timezone.utc).isoformat()}
+                ),
             }
             for row in data
         ]
@@ -60,23 +65,37 @@ def extract_and_load():
         return rows_to_load
 
     def load_data(rows):
+        connection = BaseHook.get_connection("google_cloud_default")
+        keyfile_dict = connection.extra_dejson.get(
+            "extra__google_cloud_platform__keyfile_dict"
+        )
+        credentials = service_account.Credentials.from_service_account_info(
+            keyfile_dict
+        )
+
+        client = bigquery.Client(
+            credentials=credentials,
+            project=connection.extra_dejson.get(
+                "extra__google_cloud_platform__project"
+            ),
+        )
         client = bigquery.Client()
+
         table_id = f"{GCP_PROJECT_ID}.{landing_dataset_name}.{landing_table_name}"
         table = client.get_table(table_id)
 
         errors = client.insert_rows(table, rows)
         if errors:
             raise Exception(f"Failed to insert rows: {errors}")
-        
+
     raw_data = extract_electricity_prices()
     prepared_data = prepare_data(raw_data)
     load_data(prepared_data)
 
-    
 
 # Create BigQuery table if not exists
 create_table = BigQueryCreateEmptyTableOperator(
-    task_id='create_table',
+    task_id="create_table",
     project_id=GCP_PROJECT_ID,
     dataset_id=landing_dataset_name,
     table_id=landing_table_name,
@@ -84,14 +103,14 @@ create_table = BigQueryCreateEmptyTableOperator(
         {"name": "start_date", "type": "TIMESTAMP", "mode": "NULLABLE"},
         {"name": "end_date", "type": "TIMESTAMP", "mode": "NULLABLE"},
         {"name": "price", "type": "FLOAT", "mode": "NULLABLE"},
-        {"name": "sdp_metadata", "type": "STRING", "mode": "NULLABLE"}
+        {"name": "sdp_metadata", "type": "STRING", "mode": "NULLABLE"},
     ],
     dag=dag,
 )
 
 # Fetch and prepare data
-prepare_data = PythonOperator(
-    task_id='prepare_data',
+extract_and_load = PythonOperator(
+    task_id="extract_and_load",
     python_callable=extract_and_load,
     provide_context=True,
     dag=dag,
@@ -110,4 +129,4 @@ dbt_build = BashOperator(
     env={"GCP_PROJECT_ID": GCP_PROJECT_ID, "SAK_PATH": SAK_PATH},
 )
 
-create_table >> prepare_data  >> dbt_build
+create_table >> extract_and_load >> dbt_build
