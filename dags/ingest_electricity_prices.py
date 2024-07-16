@@ -79,7 +79,6 @@ def extract_and_load():
                 "extra__google_cloud_platform__project"
             ),
         )
-        client = bigquery.Client()
 
         table_id = f"{GCP_PROJECT_ID}.{landing_dataset_name}.{landing_table_name}"
         table = client.get_table(table_id)
