@@ -86,6 +86,7 @@ create_table = BigQueryCreateEmptyTableOperator(
         {"name": "price", "type": "FLOAT", "mode": "NULLABLE"},
         {"name": "sdp_metadata", "type": "STRING", "mode": "NULLABLE"}
     ],
+    dag=dag,
 )
 
 # Fetch and prepare data
@@ -93,6 +94,7 @@ prepare_data = PythonOperator(
     task_id='prepare_data',
     python_callable=extract_and_load,
     provide_context=True,
+    dag=dag,
 )
 
 # Task to run dbt build
