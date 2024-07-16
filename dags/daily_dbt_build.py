@@ -34,12 +34,8 @@ AIRFLOW_HOME = os.environ['AIRFLOW_HOME']
 dbt_build = BashOperator(
     task_id="dbt_build",
     bash_command=f"""
-        if [ -d "{DBT_PROJECT_DIR}/.git" ]; then
-            cd {DBT_PROJECT_DIR} && git pull
-        else
-            git clone {DBT_PROJECT_GITHUB_URL} {DBT_PROJECT_DIR}
-            cd {DBT_PROJECT_DIR}
-        fi
+        git clone {DBT_PROJECT_GITHUB_URL} {DBT_PROJECT_DIR}
+        cd {DBT_PROJECT_DIR}
         source {AIRFLOW_HOME}/dbt_env/bin/activate
         dbt build --profiles-dir ./prod_profile
     """,
