@@ -4,30 +4,29 @@ import json
 from datetime import datetime, timezone
 
 from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from airflow.models import Variable
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryCreateEmptyTableOperator,
 )
 from google.cloud import bigquery
-from airflow.hooks.base_hook import BaseHook
-from google.oauth2 import service_account
+from airflow.providers.google.common.hooks.base_google import GoogleBaseHook
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "email_on_failure": False,
     "email_on_retry": False,
-    "retries": 0,
+    "retries": 1,
 }
 
 dag = DAG(
     "ingest_electricity_prices",
     default_args=default_args,
     description="A DAG to ingest latest electricity prices from a public API and store in BigQuery",
-    schedule_interval="@daily",
+    schedule_interval="30 11 * * *",  # Run daily at 11:30 UTC = 14:30 EEST
     start_date=days_ago(1),
     catchup=False,
 )
@@ -65,20 +64,9 @@ def extract_and_load():
         return rows_to_load
 
     def load_data(rows):
-        connection = BaseHook.get_connection("google_cloud_default")
-        keyfile_dict = connection.extra_dejson.get(
-            "extra__google_cloud_platform__keyfile_dict"
-        )
-        credentials = service_account.Credentials.from_service_account_info(
-            keyfile_dict
-        )
-
-        client = bigquery.Client(
-            credentials=credentials,
-            project=connection.extra_dejson.get(
-                "extra__google_cloud_platform__project"
-            ),
-        )
+        gcloud_conn_hook = GoogleBaseHook(gcp_conn_id="google_cloud_default")
+        credentials = gcloud_conn_hook.get_credentials()
+        client = bigquery.Client(credentials=credentials)
 
         table_id = f"{GCP_PROJECT_ID}.{landing_dataset_name}.{landing_table_name}"
         table = client.get_table(table_id)
