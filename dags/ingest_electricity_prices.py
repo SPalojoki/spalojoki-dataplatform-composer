@@ -110,6 +110,7 @@ dbt_build = BashOperator(
         git clone {DBT_PROJECT_GITHUB_URL} {DBT_PROJECT_DIR}
         cd {DBT_PROJECT_DIR}
         source {AIRFLOW_HOME}/dbt_env/bin/activate
+        dbt deps
         dbt build --profiles-dir ./prod_profile --select stg_electricity_prices+
     """,
     dag=dag,
