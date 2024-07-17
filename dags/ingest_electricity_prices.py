@@ -71,7 +71,7 @@ def extract_and_load():
         table_id = f"{GCP_PROJECT_ID}.{landing_dataset_name}.{landing_table_name}"
         table = client.get_table(table_id)
 
-        errors = client.insert_rows(table, rows)
+        errors = client.insert_rows_json(table, rows)
         if errors:
             raise Exception(f"Failed to insert rows: {errors}")
 
@@ -90,7 +90,7 @@ create_table = BigQueryCreateEmptyTableOperator(
         {"name": "start_date", "type": "TIMESTAMP", "mode": "NULLABLE"},
         {"name": "end_date", "type": "TIMESTAMP", "mode": "NULLABLE"},
         {"name": "price", "type": "FLOAT", "mode": "NULLABLE"},
-        {"name": "sdp_metadata", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "sdp_metadata", "type": "JSON", "mode": "NULLABLE"},
     ],
     dag=dag,
 )
