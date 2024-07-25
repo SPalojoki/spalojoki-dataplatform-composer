@@ -15,9 +15,10 @@ Data ingestion DAGs load data from source systems into source tables in the land
 
 #### Data Ingestion DAGs
 
-| DAG Name                 | Source System        | Description                                                                           |
-|--------------------------|----------------------|---------------------------------------------------------------------------------------|
-| Ingest electricity prices| api.porssisahko.net  | Fetches hourly NordPool electricity prices for the next day after they are released.  |
+| DAG Name                 | Source System        | Description                                                                                                 |
+|--------------------------|----------------------|-------------------------------------------------------------------------------------------------------------|
+| Ingest electricity prices| api.porssisahko.net  | Fetches hourly NordPool electricity prices for the next day after they are released.                        |
+| Ingest weather readings  | Netatmo Connect API  | Retrieves weather data from an on-site, self-hosted weather station at a summer residence every ten minutes.|
 
 The ingestion jobs require write access to the BigQuery datasets. They use the `google_cloud_platform` connection for authentication with a Google Cloud Service Account. For more details, refer to the *Variables, Secrets, and Connections* section.
 
@@ -45,6 +46,10 @@ The following variables and secrets must be configured for the DAGs to function 
 | DBT_PROJECT_GITHUB_URL  | https://github.com/SPalojoki/spalojoki-dataplatform-dbt.git|
 | GCP_PROJECT_ID          | wise-key-423412-q8                                         |
 | SAK_PATH                | /opt/airflow/dbt_sak.json                                  |
+| NETATMO_CLIENT_ID       | *Get from Netatmo Connect*                                 |
+| NETATMO_CLIENT_SECRET   | *Get from Netatmo Connect*                                 |
+| NETATMO_ACCESS_TOKEN    | *Get from Netatmo Connect*                                 |
+| NETATMO_REFRESH_TOKEN   | *Get from Netatmo Connect*                                 |
 
 ## Environments
 
