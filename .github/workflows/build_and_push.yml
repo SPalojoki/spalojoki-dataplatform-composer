@@ -27,11 +27,15 @@ jobs:
       run: |
         gcloud auth configure-docker ${{ vars.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
 
-    - name: Build Docker images
-      run: |
-        docker build -t ${{ vars.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/spalojoki-dataplatform-composer .
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-
-    - name: Push Docker image to Artifact Registry
-      run: |
-        docker push ${{ vars.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/spalojoki-dataplatform-composer
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        platforms: linux/arm64 # Only arm64 for cost reasons
+        push: true
+        tags: ${{ vars.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/spalojoki-dataplatform-composer
